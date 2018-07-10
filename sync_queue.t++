@@ -1,0 +1,92 @@
+/**
+ * Synchronous queue for general use.
+ * 
+ * @author Charles Van West
+ * @version 0.0
+ */
+
+#ifndef BASILIO_CHAT_SYNC_QUEUE_TXX
+#define BASILIO_CHAT_SYNC_QUEUE_TXX
+
+#include <mutex>
+#include <condition_variable>
+#include <queue>
+
+namespace vanwestco {
+
+template <typename T> class sync_queue {
+public:
+    /**
+     * Type of the stored elements.
+     */
+    using value_type = T;
+    
+    /**
+     * Gets a reference to the element at the front of the queue.
+     * 
+     * @return the front element
+     */
+    value_type& front();
+    
+    /**
+     * Waits until the queue has a front element, then gets a reference to it.
+     * 
+     * @return the front element
+     */
+    value_type& wait_front();
+    
+    /**
+     * Inserts an element at the back of the queue.
+     * 
+     * @param element the element to insert
+     */
+    void push(const value_type& element);
+    
+    /**
+     * Pops (and deletes) the element at the end of the queue.
+     */
+    void pop();
+private:
+    std::queue<value_type> elements;
+    std::mutex lock;
+    std::condition_variable sync;
+};
+
+} /* ~namespace vanwestco */
+
+/*----------------------------------------------------------------------------*
+ |                           sync_queue implementation                        |
+ *----------------------------------------------------------------------------*/
+
+template <typename T>
+typename vanwestco::sync_queue<T>::value_type&
+vanwestco::sync_queue<T>::front() {
+    std::lock_guard l(lock);
+    return elements.front();
+}
+
+template <typename T>
+typename vanwestco::sync_queue<T>::value_type&
+vanwestco::sync_queue<T>::wait_front() {
+    std::unique_lock<std::mutex> l(lock);
+    if (elements.empty()) {
+        sync.wait(l, [this] { return !elements.empty(); });
+    }
+    return elements.front();
+}
+
+template <typename T>
+void vanwestco::sync_queue<T>::push(
+        const vanwestco::sync_queue<T>::value_type& element) {
+    std::lock_guard l(lock);
+    elements.push(element);
+    sync.notify_one();
+}
+
+template <typename T>
+void vanwestco::sync_queue<T>::pop() {
+    std::lock_guard l(lock);
+    elements.pop();
+}
+
+#endif /* ~BASILIO_CHAT_SYNC_QUEUE_TXX */
