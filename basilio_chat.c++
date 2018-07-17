@@ -124,13 +124,13 @@ void basilio_chat::process_microphone() {
         try {
             /* read a block of audio */
             Audio_Handle::Block_t block = audio_handle->record_block();
-            packet pack(block.channel.size() * Audio_Handle::SAMPLE_SIZE,
+            packet pack(block.channel().size() * Audio_Handle::SAMPLE_SIZE,
                         packet_type::AUDIO);
             
             /* copy the audio into the packet */
             int pack_index = 0;
             /* XXX, assumes int */
-            for (Audio_Handle::SAMPLE_TYPE_t n : block.channel) {
+            for (Audio_Handle::Sample_t n : block.channel()) {
                 for (int i = 0; i < Audio_Handle::SAMPLE_SIZE; ++i) {
                     pack[pack_index++] = static_cast<char>(n & 0xFF);
                     n >>= 8;

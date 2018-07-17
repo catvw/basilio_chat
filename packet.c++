@@ -1,6 +1,7 @@
-#include "socket/Socket.h++"
+#include "basilio_chat.h++" /* for some reason, this doesn't compile if this
+                               header isn't first. I don't know why. */
 #include "packet.h++"
-#include "basilio_chat.h++"
+#include "../socket/Socket.h++"
 
 #include <iostream>
 #include <string>

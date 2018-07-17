@@ -10,7 +10,7 @@
 
 #include "terminal/terminal_manager.h++"
 #include "packet.h++"
-#include "socket/Socket.h++"
+#include "../socket/Socket.h++"
 #include "audio/core_audio.h++"
 
 #include <string>

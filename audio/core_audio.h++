@@ -9,7 +9,7 @@
 
 namespace portaudio {
 
-#include "portaudio/portaudio.h"
+#include "portaudio.h"
 
 /* format aliases */
 constexpr const PaSampleFormat paFloat32_alias = paFloat32;
@@ -171,7 +171,7 @@ public:
     /**
      * Alias for the typename of the sample type.
      */
-    using Sample_Type_t = std::int16_t;
+    using Sample_t = std::int16_t;
     
     /**
      * Sets the number of channels. Doesn't do anything to anything other than
@@ -187,12 +187,12 @@ public:
     /**
      * Holds the size of each sample.
      */
-    constexpr const static std::size_t SAMPLE_SIZE = sizeof(Sample_Type_t);
+    constexpr const static std::size_t SAMPLE_SIZE = sizeof(Sample_t);
     
     /**
      * Type alias for the kind of audio block Audio_Handle uses.
      */
-    using Block_t = Audio_Block<Sample_Type_t,
+    using Block_t = Audio_Block<Sample_t,
                                 CHANNEL_COUNT,
                                 FRAMES_PER_BUFFER>;
     

@@ -6,7 +6,7 @@
  */
  
 #include "basilio_chat.h++"
-#include "socket/Socket.h++"
+#include "../socket/Socket.h++"
 
 #include <string>
 #include <sstream>
@@ -15,7 +15,6 @@
 #include <exception>
 #include <regex>
 
-namespace {
 #include <argp.h>
 
 struct arguments_object {
@@ -108,7 +107,6 @@ static error_t parse_function(int key, char* arg, argp_state* state) {
 }
 
 constexpr struct argp parser = { options, parse_function, args_doc, doc };
-} /* ~namespace */
 
 using namespace vanwestco;
 

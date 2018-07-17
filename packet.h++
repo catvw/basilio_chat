@@ -8,7 +8,7 @@
 #ifndef BASILIO_CHAT_PACKET_HXX
 #define BASILIO_CHAT_PACKET_HXX
 
-#include "socket/Socket.h++"
+#include "../socket/Socket.h++"
 
 #include <cstdint>
 

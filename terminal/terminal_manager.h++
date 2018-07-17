@@ -9,7 +9,7 @@
 #ifndef BASILIO_CHAT_TERMINAL_HXX
 #define BASILIO_CHAT_TERMINAL_HXX
 
-#include "sync_queue.t++"
+#include "../sync_queue.t++"
 
 #include <string>
 #include <thread>
