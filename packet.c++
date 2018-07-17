@@ -70,10 +70,11 @@ vanwestco::packet::~packet() {
 /*----------------------------------------------------------------------------*/
 vanwestco::packet vanwestco::read_packet(
         const vanwestco::socket::Socket* sock) {
-    char header[HEADER_LENGTH];
+    unsigned char header[HEADER_LENGTH];
     
     /* get a header */
-    ssize_t read_bytes = sock->read(header, HEADER_LENGTH);
+    ssize_t read_bytes   /* XXX */
+            = sock->read(reinterpret_cast<char*>(header), HEADER_LENGTH);
     
     /* build a packet from the header */
     packet pack((static_cast<packet_size>(header[3]) << 24)
@@ -96,7 +97,7 @@ vanwestco::packet vanwestco::read_packet(
 void vanwestco::write_packet(const vanwestco::socket::Socket* sock, 
                              const packet* pack) {
     vanwestco::packet_size full_length = HEADER_LENGTH + pack->length;
-    char raw_packet[full_length];
+    unsigned char raw_packet[full_length];
     
     /* add payload length to header */
     raw_packet[3] = static_cast<char>(full_length >> 24);
@@ -114,6 +115,6 @@ void vanwestco::write_packet(const vanwestco::socket::Socket* sock,
     for (int i = 0; i < pack->length; ++i) {
         raw_packet[HEADER_LENGTH + i] = pack->payload[i];
     }
-    
-    sock->write(raw_packet, full_length);
+                /* XXX */
+    sock->write(reinterpret_cast<char*>(raw_packet), full_length);
 }
