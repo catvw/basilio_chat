@@ -73,20 +73,31 @@ std::string input_reader::get_line() {
             if (std::cin.get() == '[') {
                 char key = std::cin.get();
                 switch (key) {
-                case 'C': /* cursor forward */
-                    if (cursor < input_line.size()) {
-                        ++cursor;
-                    }
-                    next_update = update_type::CURSOR_POS;
-                    break;
-                case 'D': /* cursor back */
-                    if (cursor > 0) {
-                        --cursor;
-                    }
-                    next_update = update_type::CURSOR_POS;
-                    break;
+             /* add letter for ANSI escape code here:
+                case 'A': // ... */
                 }
             }
+            break;
+        /* line navigation commands: */
+        case 'f' - 96: /* cursor forward */
+            if (cursor < input_line.size()) {
+                ++cursor;
+            }
+            next_update = update_type::CURSOR_POS;
+            break;
+        case 'b' - 96: /* cursor back */
+            if (cursor > 0) {
+                --cursor;
+            }
+            next_update = update_type::CURSOR_POS;
+            break;
+        case 'a' - 96: /* beginning of line */
+            cursor = 0;
+            next_update = update_type::CURSOR_POS;
+            break;
+        case 'e' - 96: /* end of line */
+            cursor = input_line.size();
+            next_update = update_type::CURSOR_POS;
             break;
         default:
             if ((1 <= next) && (next <= 26)) { /* control character */
