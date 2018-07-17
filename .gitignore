@@ -1,0 +1,9 @@
+# Ignore object files in the tracking.
+*.o
+
+# Ignore compiled program.
+basilio_chat
+
+# Ignore testing binaries.
+terminal/terminal_test
+audio/audio_test
