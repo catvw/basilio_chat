@@ -1,5 +1,27 @@
 #include "core_audio.h++"
 
+static int record_callback(const void* input,
+                           void* output,
+                           unsigned long int frames,
+                           const PaStreamCallbackTimeInfo* time_info,
+                           PaStreamCallbackFlags statusFlags,
+                           void* data) {
+    
+}
+
+static int play_callback(const void* input,
+                         void* output,
+                         unsigned long int frames,
+                         const PaStreamCallbackTimeInfo* time_info,
+                         PaStreamCallbackFlags statusFlags,
+                         void* data) {
+    
+}
+
+/*----------------------------------------------------------------------------*
+ |                                    Audio_Handle                            |
+ *----------------------------------------------------------------------------*/
+
 vanwestco::Audio_Handle::Audio_Handle() {
     initialize();
     get_device_info();
@@ -65,13 +87,13 @@ void vanwestco::Audio_Handle::set_parameters() {
     input_parameters.channelCount
             = /*input_info->maxInputChannels*/ CHANNEL_COUNT;
     input_parameters.sampleFormat = SAMPLE_TYPE;
-    input_parameters.suggestedLatency = input_info->defaultHighInputLatency;
+    input_parameters.suggestedLatency = input_info->defaultLowInputLatency;
     input_parameters.hostApiSpecificStreamInfo = nullptr;
     
     output_parameters.channelCount
             = /*output_info->maxOutputChannels*/ CHANNEL_COUNT;
     output_parameters.sampleFormat = SAMPLE_TYPE;
-    output_parameters.suggestedLatency = output_info->defaultHighOutputLatency;
+    output_parameters.suggestedLatency = output_info->defaultLowOutputLatency;
     output_parameters.hostApiSpecificStreamInfo = nullptr;
 }
 
