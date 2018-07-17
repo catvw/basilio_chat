@@ -62,10 +62,17 @@ std::string input_reader::get_line() {
             next_update = update_type::INPUT_LINE;
             break;
         case '\x09':
-        case '\x7F': /* backspace/delete */
+        case '\x7F': /* backspace/delete keys */
             if (cursor != 0 && input_line.size() > 0) {
                 /* remove character */
                 input_line.erase(input_line.begin() + --cursor);
+                next_update = update_type::INPUT_LINE;
+            }
+            break;
+        case 'd' - 96: /* delete */
+            if (cursor != input_line.size() && input_line.size() > 0) {
+                /* remove character */
+                input_line.erase(input_line.begin() + cursor);
                 next_update = update_type::INPUT_LINE;
             }
             break;
@@ -78,6 +85,7 @@ std::string input_reader::get_line() {
                 }
             }
             break;
+        
         /* line navigation commands: */
         case 'f' - 96: /* cursor forward */
             if (cursor < input_line.size()) {
