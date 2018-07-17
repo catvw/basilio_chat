@@ -1,23 +1,5 @@
 #include "core_audio.h++"
 
-static int record_callback(const void* input,
-                           void* output,
-                           unsigned long int frames,
-                           const PaStreamCallbackTimeInfo* time_info,
-                           PaStreamCallbackFlags statusFlags,
-                           void* data) {
-    
-}
-
-static int play_callback(const void* input,
-                         void* output,
-                         unsigned long int frames,
-                         const PaStreamCallbackTimeInfo* time_info,
-                         PaStreamCallbackFlags statusFlags,
-                         void* data) {
-    
-}
-
 /*----------------------------------------------------------------------------*
  |                                    Audio_Handle                            |
  *----------------------------------------------------------------------------*/
