@@ -17,23 +17,23 @@ namespace vanwestco {
 typedef uint32_t packet_size;      /* size of packet */
 typedef uint8_t  packet_bitfield;  /* bitfield storage */
 
-const packet_size MAX_PAYLOAD_LENGTH = 1024;
-const packet_size HEADER_LENGTH = 8;
+const packet_size max_payload_length = 1024;
+const packet_size header_length = 8;
 
 enum class packet_type : uint8_t {
-    NULL_PACKET = 0x00,  /* invalid type, technically */
-    JOIN        = 0x01,  /* sent on server join */
-/*  DISCONNECT  = 0x02,*//* sent on server disconnect */
-    PING        = 0x03,  /* sent to ping client/server */
-    NAME_CHANGE = 0x04,  /* indicates username change */
-    PLAINTEXT   = 0x05,  /* indicates plaintext message */
-    START_TYPE  = 0x06,  /* user started typing */
-    STOP_TYPE   = 0x07,  /* user stopped typing */
-    AUDIO       = 0x08,  /* audio data */
-    TYPING_LIST = 0x09   /* list of people who are currently typing */
+    null_packet = 0x00,  /* invalid type, technically */
+    join        = 0x01,  /* sent on server join */
+/*  disconnect  = 0x02,*//* sent on server disconnect */
+    ping        = 0x03,  /* sent to ping client/server */
+    name_change = 0x04,  /* indicates username change */
+    plaintext   = 0x05,  /* indicates plaintext message */
+    start_type  = 0x06,  /* user started typing */
+    stop_type   = 0x07,  /* user stopped typing */
+    audio       = 0x08,  /* audio data */
+    typing_list = 0x09   /* list of people who are currently typing */
 };
 
-class packet;
+class packet; /* forward declaration */
 
 /**
  * Reads a packet from the given socket.

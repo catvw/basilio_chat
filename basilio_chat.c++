@@ -21,7 +21,7 @@ void basilio_chat::process_console() {
             running = false;
             audio_active = false;
             /* prepare disconnect */
-/*          packet pack(1, packet_type::DISCONNECT, false, "X");
+/*          packet pack(1, packet_type::disconnect, false, "X");
             
             try {
                 write_packet(sock, &pack);
@@ -30,7 +30,7 @@ void basilio_chat::process_console() {
                              += exc.what());
             }*/
             packet finish(0,
-                          packet_type::NULL_PACKET,
+                          packet_type::null_packet,
                           false,
                           nullptr);
             std::unique_lock<std::mutex> lock(outbound_packets_sync);
@@ -39,7 +39,7 @@ void basilio_chat::process_console() {
         } else if (line.length() != 0) {
             /* prepare packet */
             packet pack(static_cast<packet_size>(line.length()),
-                        packet_type::PLAINTEXT,
+                        packet_type::plaintext,
                         false,
                         line.c_str());
             std::unique_lock<std::mutex> lock(outbound_packets_sync);
@@ -65,7 +65,7 @@ void basilio_chat::process_outbound_packets() {
         outbound_packets.pop();
         
         /* check for exit */
-        if (next.get_type() == packet_type::NULL_PACKET) { /* TODO: change */
+        if (next.get_type() == packet_type::null_packet) { /* TODO: change */
             running = false;
         } else { /* send packet */
             try {
@@ -89,18 +89,18 @@ void basilio_chat::process_server() {
             packet pack = read_packet(&sock);
             switch (pack.get_type()) {
             default:
-            case packet_type::PLAINTEXT:
+            case packet_type::plaintext:
                 term.write_line(std::string(pack.get_payload(),
                                             pack.get_length()));
                 if (bell_alert && !pack.is_self()) { std::cout.put('\x07'); }
                 break;
-            case packet_type::PING:
+            case packet_type::ping:
                 /* TODO: implement ping back */
                 break;
-            case packet_type::TYPING_LIST:
+            case packet_type::typing_list:
                 /* TODO: implement list display */
                 break;
-            case packet_type::AUDIO:
+            case packet_type::audio:
                 /* TODO: implement audio */
                 break;
             }
@@ -124,14 +124,14 @@ void basilio_chat::process_microphone() {
         try {
             /* read a block of audio */
             Audio_Handle::Block_t block = audio_handle->record_block();
-            packet pack(block.channel().size() * Audio_Handle::SAMPLE_SIZE,
-                        packet_type::AUDIO);
+            packet pack(block.channel().size() * Audio_Handle::sample_size,
+                        packet_type::audio);
             
             /* copy the audio into the packet */
             int pack_index = 0;
             /* XXX, assumes int */
             for (Audio_Handle::Sample_t n : block.channel()) {
-                for (int i = 0; i < Audio_Handle::SAMPLE_SIZE; ++i) {
+                for (int i = 0; i < Audio_Handle::sample_size; ++i) {
                     pack[pack_index++] = static_cast<char>(n & 0xFF);
                     n >>= 8;
                 }
@@ -199,7 +199,7 @@ void basilio_chat::main() {
     std::this_thread::sleep_for(std::chrono::seconds(1));
     
     /* send username over */
-    packet uname(username.length(), packet_type::JOIN, false, username.c_str());
+    packet uname(username.length(), packet_type::join, false, username.c_str());
     write_packet(&sock, &uname);
     
     /* register commands */

@@ -25,23 +25,27 @@ struct arguments_object {
     bool voice_on = false;
 } arguments;
 
-static constexpr const char* ARGUMENT_FORMAT =
+namespace constants {
+static constexpr const char* argument_format =
         "[A-Za-z0-9_-]+@[A-Za-z0-9\\.-]+:[0-9]{1,5}";
 
-static constexpr int KEY_DEBUG = static_cast<int>('d');
-static constexpr int KEY_VOICE = 0x3001;
+static constexpr int key_debug = static_cast<int>('d');
+static constexpr int key_voice = 0x3001;
 
-static constexpr error_t PERR_GENERIC_ERROR = 0x2001;
+static constexpr error_t perr_generic_error = 0x2001;
+} /* ~namespace constants */
 
-const char* argp_program_version = "basilio_chat 0.0";
-const char* argp_program_bug_address = "nowhere@bananaland.gov";
+constexpr const char* argp_program_version = "basilio_chat 0.0";
+constexpr const char* argp_program_bug_address = "nowhere@bananaland.gov";
 
 static constexpr const char* doc = "What a great thing the internet is.";
 static constexpr const char* args_doc = "user@host:port";
 
 static constexpr struct argp_option options[] = {
-    { "debug", KEY_DEBUG, nullptr, 0, "Turn debug mode on. You never know..." },
-    { "voice", KEY_VOICE, nullptr, 0, "Turn voice transmission/reception on." },
+    { "debug", constants::key_debug, nullptr, 0,
+            "Turn debug mode on. You never know..." },
+    { "voice", constants::key_voice, nullptr, 0,
+            "Turn voice transmission/reception on." },
     { nullptr }
 };
 
@@ -52,10 +56,10 @@ static error_t parse_function(int key, char* arg, argp_state* state) {
             static_cast<arguments_object*>(state->input);
     
     switch (key) {
-    case KEY_DEBUG:
+    case constants::key_debug:
         arguments->debug_mode_on = true;
         break;
-    case KEY_VOICE:
+    case constants::key_voice:
         arguments->voice_on = true;
         break;
     case ARGP_KEY_NO_ARGS:
@@ -73,7 +77,7 @@ static error_t parse_function(int key, char* arg, argp_state* state) {
             
             /* make sure we've got user@host:port */
             if (!std::regex_match(std::string(arg),
-                                  std::regex(ARGUMENT_FORMAT))) {
+                                  std::regex(argument_format))) {
                 throw std::exception();
             }
             
@@ -97,7 +101,7 @@ static error_t parse_function(int key, char* arg, argp_state* state) {
             }
         } catch (std::exception&) {
             argp_usage(state);
-            return PERR_GENERIC_ERROR;
+            return constants::perr_generic_error;
         }
         break;
     default:

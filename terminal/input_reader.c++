@@ -52,28 +52,28 @@ std::string input_reader::get_line() {
     std::string next_line;
     
     while (reading) {
-        update_type next_update = update_type::NO_UPDATE;
+        update_type next_update = update_type::no_update;
         char next = std::cin.get();
         bool newline = false;
         
         switch (next) {
         case '\n': /* new line */
             newline = true;
-            next_update = update_type::INPUT_LINE;
+            next_update = update_type::input_line;
             break;
         case '\x09':
         case '\x7F': /* backspace/delete keys */
             if (cursor != 0 && input_line.size() > 0) {
                 /* remove character */
                 input_line.erase(input_line.begin() + --cursor);
-                next_update = update_type::INPUT_LINE;
+                next_update = update_type::input_line;
             }
             break;
         case 'd' - 96: /* delete */
             if (cursor != input_line.size() && input_line.size() > 0) {
                 /* remove character */
                 input_line.erase(input_line.begin() + cursor);
-                next_update = update_type::INPUT_LINE;
+                next_update = update_type::input_line;
             }
             break;
         case '\x1B': /* special controls */
@@ -91,21 +91,21 @@ std::string input_reader::get_line() {
             if (cursor < input_line.size()) {
                 ++cursor;
             }
-            next_update = update_type::CURSOR_POS;
+            next_update = update_type::cursor_pos;
             break;
         case 'b' - 96: /* cursor back */
             if (cursor > 0) {
                 --cursor;
             }
-            next_update = update_type::CURSOR_POS;
+            next_update = update_type::cursor_pos;
             break;
         case 'a' - 96: /* beginning of line */
             cursor = 0;
-            next_update = update_type::CURSOR_POS;
+            next_update = update_type::cursor_pos;
             break;
         case 'e' - 96: /* end of line */
             cursor = input_line.size();
-            next_update = update_type::CURSOR_POS;
+            next_update = update_type::cursor_pos;
             break;
         default:
             if ((1 <= next) && (next <= 26)) { /* control character */
@@ -120,19 +120,19 @@ std::string input_reader::get_line() {
                 if (registered) { /* push the key pressed into the queue */
                     command_queue.push(control);
                 }
-            } else if (input_line.size() < MAX_LINE_LENGTH) { /* within range */
+            } else if (input_line.size() < max_line_length) { /* within range */
                 /* add character */
                 input_line.insert(input_line.begin() + cursor++, next);
-                next_update = update_type::INPUT_LINE;
+                next_update = update_type::input_line;
             }
             break;
         }
         
         /* do display update */
         switch (next_update) {
-        case update_type::NO_UPDATE:
+        case update_type::no_update:
             break;
-        case update_type::INPUT_LINE: {
+        case update_type::input_line: {
             /* necessary because input_line is stored as std::vector */
             char nl_int[input_line.size() + 1];
             int i = 0;
@@ -152,13 +152,13 @@ std::string input_reader::get_line() {
                 nl_int[0] = 0;
             }
             
-            out.update(display::display_update(update_type::INPUT_LINE,
+            out.update(display::display_update(update_type::input_line,
                                                nl_int, cursor));
             break;
         }
         
-        case update_type::CURSOR_POS:
-            out.update(display::display_update(update_type::CURSOR_POS,
+        case update_type::cursor_pos:
+            out.update(display::display_update(update_type::cursor_pos,
                                                "", cursor));
             break;
         default:

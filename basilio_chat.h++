@@ -148,6 +148,7 @@ private:
     bool debug;
     bool voice;
     
+    /* TODO: update to use sync_queue */
     std::queue<packet> outbound_packets;
     std::mutex outbound_packets_sync;
     std::condition_variable outbound_packets_cv;

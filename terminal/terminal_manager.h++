@@ -56,20 +56,20 @@ public:
             
             /**
              * Lists the possible update types.
-             * NO_UPDATE:   don't do anything
-             * NEW_LINE:    add a new line of dialogue above the input line
-             * INPUT_LINE:  update the input line characters
-             * CURSOR_POS:  update the cursor position
-             * END_OF_LINE: program's about to exit
+             * no_update:   don't do anything
+             * new_line:    add a new line of dialogue above the input line
+             * input_line:  update the input line characters
+             * cursor_pos:  update the cursor position
+             * end_of_line: program's about to exit
              * 
              * @version 0
              */
             enum class update_type {
-                NO_UPDATE,
-                NEW_LINE,
-                INPUT_LINE, 
-                CURSOR_POS,
-                END_OF_LINE
+                no_update,
+                new_line,
+                input_line, 
+                cursor_pos,
+                end_of_line
             };
             
             /*---------------------------------------------------------*
@@ -233,7 +233,7 @@ public:
          */
          void register_command(char key, terminal::command* cmd);
     private:
-        const static int MAX_LINE_LENGTH = 1023;
+        constexpr const static int max_line_length = 1023;
         std::vector<char> input_line;
         int cursor; /* basically an offset in input_line */
         display& out;

@@ -5,18 +5,18 @@
 
 using display = vanwestco::terminal::display;
 
-namespace {
-const char* const CSI_BASE        = "\x1b[";
-const char* const CURSOR_COLUMN_1 = "\x1b[1G";
-const char* const CLEAR_LINE      = "\x1b[2K";
+namespace termctl { /* terminal control commands */
+static constexpr const char* const csi_base        = "\x1b[";
+static constexpr const char* const cursor_column_1 = "\x1b[1G";
+static constexpr const char* const clear_line      = "\x1b[2K";
 
-const char* const INPUT_PROMPT    = "\x1b[1m>\x1b[0m ";
-const char* const MORE_CHARACTERS = "\x1b[1m$\x1b[0m";
+static constexpr const char* const input_prompt    = "\x1b[1m>\x1b[0m ";
+static constexpr const char* const more_characters = "\x1b[1m$\x1b[0m";
 
-const int INPUT_PROMPT_LENGTH    = 2; /* length of the printable characters */
-const int MORE_CHARACTERS_LENGTH = 1;
-}
-
+/* lengths of the printable characters */
+static constexpr const int input_prompt_length     = 2;
+static constexpr const int more_characters_length  = 1;
+} /* ~namespace termctl */
 
 display::display_update::display_update(
         const update_type t, const std::string& l, const int c) 
@@ -53,7 +53,7 @@ display::display(const int width) : display_thread([this] { this->loop(); }) {
 
 display::~display() {
     this->update(display::display_update(
-            display::display_update::update_type::END_OF_LINE, ""));
+            display::display_update::update_type::end_of_line, ""));
     display_thread.join();
 }
 
@@ -74,52 +74,53 @@ void display::loop() {
         
         /* do tasks */
         switch (next.get_type()) {
-        case display_update::update_type::NO_UPDATE:
+        case display_update::update_type::no_update:
             break;
-        case display_update::update_type::INPUT_LINE:
+        case display_update::update_type::input_line:
             /* store the new input line */
             input_line = next.get_line();
             
             [[fallthrough]];
-        case display_update::update_type::CURSOR_POS:
+        case display_update::update_type::cursor_pos:
             cursor = next.cursor_pos();
             
             if (print_offset == 0) { /* starting from bare prompt */
                 /* shift the text window right */
                 if (cursor > terminal_width
-                             - INPUT_PROMPT_LENGTH
-                             - MORE_CHARACTERS_LENGTH) {
+                             - termctl::input_prompt_length
+                             - termctl::more_characters_length) {
                     print_offset = cursor
                                    - (terminal_width
-                                      - INPUT_PROMPT_LENGTH
-                                      - MORE_CHARACTERS_LENGTH);
+                                      - termctl::input_prompt_length
+                                      - termctl::more_characters_length);
                 }
             } else {
                 if (cursor < print_offset) {
                     print_offset = cursor;
                 } else if (cursor - print_offset 
-                           > terminal_width - 2 * MORE_CHARACTERS_LENGTH) {
+                           > terminal_width
+                             - 2 * termctl::more_characters_length) {
                     print_offset = cursor 
                                    - (terminal_width 
-                                      - 2 * MORE_CHARACTERS_LENGTH);
+                                      - 2 * termctl::more_characters_length);
                 }
             }
             
             sketch_input_line();
             break;
-        case display_update::update_type::NEW_LINE:
+        case display_update::update_type::new_line:
             /* write the new line over the input line, line-feeding, 
                in the bottom left */
-            std::cout << CLEAR_LINE
-                      << CURSOR_COLUMN_1
+            std::cout << termctl::clear_line
+                      << termctl::cursor_column_1
                       << next.get_line().c_str()
                       << std::endl;
             sketch_input_line();
             break;
-        case display_update::update_type::END_OF_LINE:
+        case display_update::update_type::end_of_line:
             running = false;
-            std::cout << CLEAR_LINE 
-                      << CURSOR_COLUMN_1
+            std::cout << termctl::clear_line
+                      << termctl::cursor_column_1
                       << std::flush;
             break;
         }
@@ -134,8 +135,8 @@ void display::sketch_input_line() {
                                           respectively */
     
     left_fill_length = print_offset == 0 
-                       ? INPUT_PROMPT_LENGTH
-                       : MORE_CHARACTERS_LENGTH;
+                       ? termctl::input_prompt_length
+                       : termctl::more_characters_length;
     
     int screen_cursor_pos = cursor 
                             - print_offset     /* character index in message */
@@ -143,35 +144,35 @@ void display::sketch_input_line() {
                             + 1;               /* terminal text columns are
                                                   indexed from 1 */
     /* prepare screen for write */
-    std::cout << CLEAR_LINE
-              << CURSOR_COLUMN_1;
+    std::cout << termctl::clear_line
+              << termctl::cursor_column_1;
     
     if (print_offset == 0) { /* starting at prompt */
-        std::cout << INPUT_PROMPT;
+        std::cout << termctl::input_prompt;
         
         if (input_line.length() <= terminal_width
-                                   - INPUT_PROMPT_LENGTH
-                                   - MORE_CHARACTERS_LENGTH) {
+                                   - termctl::input_prompt_length
+                                   - termctl::more_characters_length) {
             std::cout << input_line;
         } else {
             std::cout << input_line.substr(0, terminal_width 
-                                              - INPUT_PROMPT_LENGTH 
-                                              - MORE_CHARACTERS_LENGTH)
-                      << MORE_CHARACTERS;
+                                              - termctl::input_prompt_length
+                                              - termctl::more_characters_length)
+                      << termctl::more_characters;
         }
     } else { /* starting wherever */
-        std::cout << MORE_CHARACTERS
+        std::cout << termctl::more_characters
                   << input_line.substr(print_offset, 
                                        terminal_width 
-                                       - 2 * MORE_CHARACTERS_LENGTH);
+                                       - 2 * termctl::more_characters_length);
         if (input_line.length() > terminal_width
-                                  - 2 * MORE_CHARACTERS_LENGTH
+                                  - 2 * termctl::more_characters_length
                                   + print_offset) {
-            std::cout << MORE_CHARACTERS;
+            std::cout << termctl::more_characters;
         }
     }
     
-    std::cout << CSI_BASE << screen_cursor_pos << 'G'
+    std::cout << termctl::csi_base << screen_cursor_pos << 'G'
               << std::flush;
 }
 

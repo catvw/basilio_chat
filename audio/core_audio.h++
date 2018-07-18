@@ -140,7 +140,7 @@ public:
     /**
      * Represents the sample-per-second rate.
      */
-    constexpr const static int SAMPLE_RATE = 44100;
+    constexpr const static int sample_rate = 44100;
     
     /**
      * Alias for the typename of the sample type.
@@ -151,24 +151,24 @@ public:
      * Sets the number of channels. Doesn't do anything to anything other than
      * Block_t and the Portaudio initialization. Currently set to mono.
      */
-    constexpr const static int CHANNEL_COUNT = 1;
+    constexpr const static int channel_count = 1;
     
     /**
      * Sets the number of frames per buffer.
      */
-    constexpr const static std::size_t FRAMES_PER_BUFFER = 4096;
+    constexpr const static std::size_t frames_per_buffer = 4096;
     
     /**
      * Holds the size of each sample.
      */
-    constexpr const static std::size_t SAMPLE_SIZE = sizeof(Sample_t);
+    constexpr const static std::size_t sample_size = sizeof(Sample_t);
     
     /**
      * Type alias for the kind of audio block Audio_Handle uses.
      */
     using Block_t = Audio_Block<Sample_t,
-                                CHANNEL_COUNT,
-                                FRAMES_PER_BUFFER>;
+                                channel_count,
+                                frames_per_buffer>;
     
     /**
      * Base class for the system-dependent audio streaming implementation.

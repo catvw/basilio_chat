@@ -23,7 +23,7 @@ terminal::~terminal() {
 
 void terminal::write_line(const std::string& line) {
     out.update(display::display_update(
-            display::display_update::update_type::NEW_LINE, line));
+            display::display_update::update_type::new_line, line));
 }
 
 void terminal::write_line(const char* line) {
@@ -32,7 +32,7 @@ void terminal::write_line(const char* line) {
 
 void terminal::write_err(const std::string& line) {
     out.update(display::display_update(
-            display::display_update::update_type::NEW_LINE,
+            display::display_update::update_type::new_line,
             std::string("\x1b[31m").append(line).append("\x1b[0m")));
             /* XXX, should probably move red handling into display */
 }

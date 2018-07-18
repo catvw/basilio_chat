@@ -23,7 +23,7 @@ public:
      * Defines what sort of sample we're getting.
      * TODO: read this from Audio_Handle somehow
      */
-    constexpr const static PaSampleFormat SAMPLE_TYPE = paInt16;
+    constexpr const static PaSampleFormat sample_type = paInt16;
     
     PortAudio_Stream();
     ~PortAudio_Stream() override;
@@ -127,7 +127,7 @@ vanwestco::Audio_Handle::Block_t PortAudio_Stream::record() {
     vanwestco::Audio_Handle::Block_t block;
     PaError error = Pa_ReadStream(stream,
                                   block.channel().data(),
-                                  vanwestco::Audio_Handle::FRAMES_PER_BUFFER);
+                                  vanwestco::Audio_Handle::frames_per_buffer);
     if (error != paNoError) {
         throw make_auexc(error);
     }
@@ -138,7 +138,7 @@ vanwestco::Audio_Handle::Block_t PortAudio_Stream::record() {
 void PortAudio_Stream::play(vanwestco::Audio_Handle::Block_t& block) {
     PaError error = Pa_WriteStream(stream,
                                    block.channel().data(),
-                                   vanwestco::Audio_Handle::FRAMES_PER_BUFFER);
+                                   vanwestco::Audio_Handle::frames_per_buffer);
     if (error != paNoError) {
         throw make_auexc(error);
     }
@@ -165,15 +165,15 @@ void PortAudio_Stream::get_device_info() {
 void PortAudio_Stream::set_parameters() {
     input_parameters.channelCount
             = /*input_info->maxInputChannels*/
-              vanwestco::Audio_Handle::CHANNEL_COUNT;
-    input_parameters.sampleFormat = SAMPLE_TYPE;
+              vanwestco::Audio_Handle::channel_count;
+    input_parameters.sampleFormat = sample_type;
     input_parameters.suggestedLatency = input_info->defaultLowInputLatency;
     input_parameters.hostApiSpecificStreamInfo = nullptr;
     
     output_parameters.channelCount
             = /*output_info->maxOutputChannels*/
-              vanwestco::Audio_Handle::CHANNEL_COUNT;
-    output_parameters.sampleFormat = SAMPLE_TYPE;
+              vanwestco::Audio_Handle::channel_count;
+    output_parameters.sampleFormat = sample_type;
     output_parameters.suggestedLatency = output_info->defaultLowOutputLatency;
     output_parameters.hostApiSpecificStreamInfo = nullptr;
 }
@@ -183,8 +183,8 @@ void PortAudio_Stream::open_stream() {
     PaError error = Pa_OpenStream(&stream,
                                   &input_parameters,
                                   &output_parameters,
-                                  vanwestco::Audio_Handle::SAMPLE_RATE,
-                                  vanwestco::Audio_Handle::FRAMES_PER_BUFFER,
+                                  vanwestco::Audio_Handle::sample_rate,
+                                  vanwestco::Audio_Handle::frames_per_buffer,
                                   paClipOff,
                                   nullptr,
                                   nullptr);
@@ -260,7 +260,7 @@ public:
      * Defines what sort of sample we're getting.
      * TODO: read this from Audio_Handle somehow
      */
-    constexpr const static pa_sample_format_t SAMPLE_TYPE = PA_SAMPLE_S16NE;
+    constexpr const static pa_sample_format_t sample_type = PA_SAMPLE_S16NE;
     
     PulseAudio_Stream();
     ~PulseAudio_Stream();
@@ -271,8 +271,8 @@ private:
     /**
      * Needed for read/write operations.
      */
-    constexpr const static int BYTES_PER_AUDIO_BLOCK
-            = vanwestco::Audio_Handle::FRAMES_PER_BUFFER 
+    constexpr const static int bytes_per_audio_block
+            = vanwestco::Audio_Handle::frames_per_buffer 
             * sizeof(vanwestco::Audio_Handle::Sample_t);
      
     /**
@@ -303,9 +303,9 @@ private:
  *----------------------------------------------------------------------------*/
 
 PulseAudio_Stream::PulseAudio_Stream() {
-    specs.format = SAMPLE_TYPE;
-    specs.channels = vanwestco::Audio_Handle::CHANNEL_COUNT;
-    specs.rate = vanwestco::Audio_Handle::SAMPLE_RATE;
+    specs.format = sample_type;
+    specs.channels = vanwestco::Audio_Handle::channel_count;
+    specs.rate = vanwestco::Audio_Handle::sample_rate;
     /* initialize the streams */
     read_stream = pa_simple_new(nullptr,   /* default server */
                                 "nullptr", /* name; TODO: set somehow */
@@ -344,7 +344,7 @@ vanwestco::Audio_Handle::Block_t PulseAudio_Stream::record() {
     vanwestco::Audio_Handle::Block_t block;
     if (pa_simple_read(read_stream,
                        block.channel().data(),
-                       BYTES_PER_AUDIO_BLOCK,
+                       bytes_per_audio_block,
                        &error) < 0) { /* an error occurred during read */
         throw make_auexc(error);
     }
@@ -354,7 +354,7 @@ vanwestco::Audio_Handle::Block_t PulseAudio_Stream::record() {
 void PulseAudio_Stream::play(vanwestco::Audio_Handle::Block_t& block) {
     if (pa_simple_write(write_stream,
                         block.channel().data(),
-                        BYTES_PER_AUDIO_BLOCK,
+                        bytes_per_audio_block,
                         &error) < 0) { /* an error occurred during write */
         throw make_auexc(error);
     }

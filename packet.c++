@@ -35,7 +35,7 @@ vanwestco::packet::packet(packet&& pack)
     payload = pack.payload;
     pack.payload = nullptr;
     pack.length = 0;
-    pack.type = packet_type::NULL_PACKET;
+    pack.type = packet_type::null_packet;
 }
 
 vanwestco::packet_size vanwestco::packet::get_length() const {
@@ -70,11 +70,11 @@ vanwestco::packet::~packet() {
 /*----------------------------------------------------------------------------*/
 vanwestco::packet vanwestco::read_packet(
         const vanwestco::socket::Socket* sock) {
-    unsigned char header[HEADER_LENGTH];
+    unsigned char header[header_length];
     
     /* get a header */
     ssize_t read_bytes   /* XXX */
-            = sock->read(reinterpret_cast<char*>(header), HEADER_LENGTH);
+            = sock->read(reinterpret_cast<char*>(header), header_length);
     
     /* build a packet from the header */
     packet pack((static_cast<packet_size>(header[3]) << 24)
@@ -83,11 +83,11 @@ vanwestco::packet vanwestco::read_packet(
               +  static_cast<packet_size>(header[0]),  /* reassembled length */
                  static_cast<packet_type>(header[4]),  /* packet type */
                  static_cast<packet_bitfield>(header[5])); /* is self */
-    pack.length -= HEADER_LENGTH;
+    pack.length -= header_length;
     
     /* get the payload */
     read_bytes += sock->read(pack.payload, pack.length);
-    if (read_bytes < pack.length + HEADER_LENGTH) {
+    if (read_bytes < pack.length + header_length) {
         throw vanwestco::basilio_chat::exception("EOF on packet stream");
     }
     
@@ -96,7 +96,7 @@ vanwestco::packet vanwestco::read_packet(
 
 void vanwestco::write_packet(const vanwestco::socket::Socket* sock, 
                              const packet* pack) {
-    vanwestco::packet_size full_length = HEADER_LENGTH + pack->length;
+    vanwestco::packet_size full_length = header_length + pack->length;
     unsigned char raw_packet[full_length];
     
     /* add payload length to header */
@@ -113,7 +113,7 @@ void vanwestco::write_packet(const vanwestco::socket::Socket* sock,
     
     /* copy the rest of the packet in */
     for (int i = 0; i < pack->length; ++i) {
-        raw_packet[HEADER_LENGTH + i] = pack->payload[i];
+        raw_packet[header_length + i] = pack->payload[i];
     }
                 /* XXX */
     sock->write(reinterpret_cast<char*>(raw_packet), full_length);
