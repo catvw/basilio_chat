@@ -203,7 +203,9 @@ void basilio_chat::main() {
     write_packet(&sock, &uname);
     
     /* register commands */
-    term.register_command('b', &bell_command_ref);
+    /* TODO: change the command system to '/'-style commands and rename this
+             sort of thing to "keybinds" or whatever */
+    term.register_command('l', &bell_command_ref);
     
     /* start threads */
     std::thread console([&] { process_console(); });

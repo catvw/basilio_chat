@@ -4,11 +4,12 @@
 vanwestco::Audio_Handle::Audio_Stream::~Audio_Stream() { }
 
 #ifdef USE_PORTAUDIO_FOR_SOUND
+
 /*----------------------------------------------------------------------------*
  |                              PortAudio_Stream                              |
  *----------------------------------------------------------------------------*/
 
-#include "portaudio.h"
+#include <portaudio.h>
 
 /**
  * Class representing a handle on the PortAudio library, for use inside an
@@ -31,7 +32,7 @@ public:
     void play(vanwestco::Audio_Handle::Block_t& block) override;
 private:
     /**
-     * Initializes the Portaudio library.
+     * Initializes the PortAudio library.
      * 
      * @throws Audio_Exception
      */
@@ -239,9 +240,14 @@ vanwestco::Audio_Use_Exception
 
 #else
 #ifdef USE_PULSEAUDIO_FOR_SOUND
+
 /*----------------------------------------------------------------------------*
  |                             PulseAudio_Stream                              |
  *----------------------------------------------------------------------------*/
+
+#include <pulse/simple.h>
+#include <pulse/error.h>
+
 /**
  * Class representing a handle on the PulseAudio library, for use inside an
  * Audio_Handle.
@@ -254,14 +260,117 @@ public:
      * Defines what sort of sample we're getting.
      * TODO: read this from Audio_Handle somehow
      */
-    constexpr const static PaSampleFormat SAMPLE_TYPE = paInt16;
+    constexpr const static pa_sample_format_t SAMPLE_TYPE = PA_SAMPLE_S16NE;
     
     PulseAudio_Stream();
     ~PulseAudio_Stream();
     
     vanwestco::Audio_Handle::Block_t record() override;
     void play(vanwestco::Audio_Handle::Block_t& block) override;
+private:
+    /**
+     * Needed for read/write operations.
+     */
+    constexpr const static int BYTES_PER_AUDIO_BLOCK
+            = vanwestco::Audio_Handle::FRAMES_PER_BUFFER 
+            * sizeof(vanwestco::Audio_Handle::Sample_t);
+     
+    /**
+     * Makes an Audio_Exception from a PulseAudio error code.
+     * 
+     * @param err the error
+     * @return the exception
+     */
+    static vanwestco::Audio_Exception make_aexc(int err);
+    
+    /**
+     * Makes an Audio_Use_Exception from a PulseAudio error code.
+     * 
+     * @param err the error
+     * @return the exception
+     */
+    static vanwestco::Audio_Use_Exception make_auexc(int err);
+    
+    pa_simple* read_stream;
+    pa_simple* write_stream;
+    
+    pa_sample_spec specs;
+    int error; /* set when some operation goes wrong */
 };
+
+/*----------------------------------------------------------------------------*
+ |                      PulseAudio_Stream implementation                      |
+ *----------------------------------------------------------------------------*/
+
+PulseAudio_Stream::PulseAudio_Stream() {
+    specs.format = SAMPLE_TYPE;
+    specs.channels = vanwestco::Audio_Handle::CHANNEL_COUNT;
+    specs.rate = vanwestco::Audio_Handle::SAMPLE_RATE;
+    /* initialize the streams */
+    read_stream = pa_simple_new(nullptr,   /* default server */
+                                "nullptr", /* name; TODO: set somehow */
+                                PA_STREAM_RECORD,
+                                nullptr,   /* default device */
+                                "nullptr", /* description */
+                                &specs,
+                                nullptr,   /* default channel map */
+                                nullptr,   /* default buffering */
+                                &error);   /* internal error code recording */
+    if (read_stream == nullptr) {
+        throw make_aexc(error);
+    }
+    
+    write_stream = pa_simple_new(nullptr,
+                                 "nullptr",
+                                 PA_STREAM_PLAYBACK,
+                                 nullptr,
+                                 "nullptr",
+                                 &specs,
+                                 nullptr,
+                                 nullptr,
+                                 &error);
+    if (write_stream == nullptr) {
+        pa_simple_free(read_stream);
+        throw make_aexc(error);
+    }
+}
+
+PulseAudio_Stream::~PulseAudio_Stream() {
+    pa_simple_free(write_stream);
+    pa_simple_free(read_stream);
+}
+
+vanwestco::Audio_Handle::Block_t PulseAudio_Stream::record() {
+    vanwestco::Audio_Handle::Block_t block;
+    if (pa_simple_read(read_stream,
+                       block.channel().data(),
+                       BYTES_PER_AUDIO_BLOCK,
+                       &error) < 0) { /* an error occurred during read */
+        throw make_auexc(error);
+    }
+    return block;
+}
+
+void PulseAudio_Stream::play(vanwestco::Audio_Handle::Block_t& block) {
+    if (pa_simple_write(write_stream,
+                        block.channel().data(),
+                        BYTES_PER_AUDIO_BLOCK,
+                        &error) < 0) { /* an error occurred during write */
+        throw make_auexc(error);
+    }
+}
+
+/*----------------------------------------------------------------------------*
+ |                      PulseAudio_Stream private implementation              |
+ *----------------------------------------------------------------------------*/
+
+vanwestco::Audio_Exception PulseAudio_Stream::make_aexc(int err) {
+    return vanwestco::Audio_Exception(pa_strerror(err));
+}
+
+vanwestco::Audio_Use_Exception PulseAudio_Stream::make_auexc(int err) {
+    return vanwestco::Audio_Use_Exception(pa_strerror(err));
+}
 
 #endif /* ~USE_PULSEAUDIO_FOR_SOUND */
 #endif /* ~USE_PORTAUDIO_FOR_SOUND */

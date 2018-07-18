@@ -1,10 +1,12 @@
 OBJECTS = core_audio.o
 
 core_audio.o: core_audio.c++ core_audio.h++
-	c++ -D USE_PORTAUDIO_FOR_SOUND -c -o core_audio.o core_audio.c++
+	# c++ -D USE_PORTAUDIO_FOR_SOUND -c -o core_audio.o core_audio.c++
+	c++ -D USE_PULSEAUDIO_FOR_SOUND -c -o core_audio.o core_audio.c++
 
 audio_test: audio_test.c++ core_audio.o
-	c++ -lportaudio -o audio_test audio_test.c++ core_audio.o
+	# c++ -lportaudio -o audio_test audio_test.c++ core_audio.o
+	c++ -lpulse -lpulse-simple -o audio_test audio_test.c++ core_audio.o
 
 audio_test_pa: audio_test_pa.c++
 	c++ -lportaudio -lportaudiocpp -o audio_test_pa audio_test_pa.c++

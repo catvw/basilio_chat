@@ -7,3 +7,4 @@ basilio_chat
 # Ignore testing binaries.
 terminal/terminal_test
 audio/audio_test
+audio/audio_test_pa
