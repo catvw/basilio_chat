@@ -1,23 +1,11 @@
 /**
- * PortAudio wrapper for basilio_chat, so I don't have as many headaches.
+ * Audio wrapper for basilio_chat, so I don't have as many headaches.
  * 
  * @author Charles Van West
  */
 
 #ifndef BASILIO_CHAT_CORE_AUDIO_HXX
 #define BASILIO_CHAT_CORE_AUDIO_HXX
-
-namespace portaudio {
-
-#include "portaudio.h"
-
-/* format aliases */
-constexpr const PaSampleFormat paFloat32_alias = paFloat32;
-constexpr const PaSampleFormat paInt16_alias = paInt16;
-
-/* flag aliases */
-constexpr const PaStreamFlags paClipOff_alias = paClipOff;
-} /* ~namespace portaudio */
 
 #include <string>
 #include <array>
@@ -35,26 +23,19 @@ namespace vanwestco {
 
 /**
  * General audio exception class, thrown when there's an error initializing or
- * terminating the PortAudio library.
+ * terminating the audio library.
  * 
- * @version 0.0
+ * @version 1
  */
 class Audio_Exception : public std::exception {
 public:
-    /**
-     * Constructs an Audio_Exception from the raw PortAudio error code.
-     * 
-     * @param err the error code
-     */
-    Audio_Exception(const portaudio::PaError err)
-    : error(portaudio::Pa_GetErrorText(err)) { }
-    
     /**
      * Constructs an Audio_Exception with a custom message.
      * 
      * @param err the message
      */
     Audio_Exception(const std::string& err) : error(err) { }
+    Audio_Exception(const char* err)        : error(err) { }
     
     /**
      * Gets the error message.
@@ -70,7 +51,7 @@ private:
  * More specific audio exception class, thrown when something goes wrong while
  * using the library.
  * 
- * @version 0.0
+ * @version 0
  */
 class Audio_Use_Exception : public Audio_Exception {
 public:
@@ -88,7 +69,7 @@ public:
  * @tparam C the channel count
  * @tparam N the per-channel block size
  * 
- * @version 0.4
+ * @version 4
  */
 template <typename S, int C, std::size_t N> class Audio_Block {
     static_assert(C > 0, "channel count cannot be less than 1");
@@ -124,7 +105,6 @@ public:
      * index 0 (useful for mono data).
      * 
      * @throws std::out_of_range if an index is out of bounds
-     * 
      * @return the channel
      */
     Channel_t& channel(int index = 0) {
@@ -153,7 +133,7 @@ private:
  * assumption here is that the system consists of a single-channel microphone
  * and stereo speakers.
  * 
- * @version 0.1
+ * @version 4
  */
 class Audio_Handle {
 public:
@@ -161,12 +141,6 @@ public:
      * Represents the sample-per-second rate.
      */
     constexpr const static int SAMPLE_RATE = 44100;
-    
-    /**
-     * Defines what sort of sample we're getting.
-     */
-    constexpr const static portaudio::PaSampleFormat SAMPLE_TYPE =
-            portaudio::paInt16_alias;
     
     /**
      * Alias for the typename of the sample type.
@@ -197,6 +171,51 @@ public:
                                 FRAMES_PER_BUFFER>;
     
     /**
+     * Base class for the system-dependent audio streaming implementation.
+     * TODO: make more generic.
+     * 
+     * @version 0
+     */
+    class Audio_Stream {
+    public:
+        /**
+         * Attempts to record a block of single-channel audio data from the
+         * default input.
+         * 
+         * @throws Audio_Use_Exception
+         * @return the recorded data
+         */
+        virtual Block_t record() = 0;
+        
+        /**
+         * Attemps to play a block of ~stereo~ mono audio on the default output.
+         * 
+         * Note: {block} is not const solely because for some reason that causes
+         * segfaults. {block} *should* be left unmodified.
+         * 
+         * @param block the block to play
+         * @throws Audio_Use_Exception 
+         */
+        virtual void play(Block_t& block) = 0;
+        
+        /**
+         * Attempts to record and play blocks of audio simultaneously, so
+         * neither method need lock the other out for high-quality voice chat.
+         * TODO: implement such a method.
+         * 
+         * @param block the block to play
+         * @throws Audio_Use_Exception
+         * @return the recorded data
+         */
+        /* virtual Block_t play_record(Block_t& block) = 0; */
+        
+        /**
+         * For cleanup purposes.
+         */
+        virtual ~Audio_Stream() = 0;
+    };
+    
+    /**
      * Constructs an audio handle. Behavior is only defined when one handle
      * exists at a time, which is probably not good but fine for now.
      * TODO: add the option to change the number of frames per buffer.
@@ -210,88 +229,29 @@ public:
      * Destroys the audio handle. As with the constructor, behavior is only
      * defined with one handle in existence.
      */
-    ~Audio_Handle();
+    ~Audio_Handle() = default;
     
     /**
-     * Attempts to record a block of single-channel audio data from the default
-     * input.
+     * Records a block of single-channel audio data from the default
+     * input. This really just calls record() on the underlying stream.
      * 
+     * @see Audio_Stream::record()
      * @throws Audio_Use_Exception
-     * 
      * @return the recorded data
      */
-    Block_t record_block();
+    inline Block_t record_block() { return stream->record(); }
     
     /**
-     * Attemps to play a block of ~stereo~ mono audio on the default output.
+     * Plays a block of mono audio on the default output. This really just calls
+     * play() on the underlying stream.
      * 
-     * Note: {block} is not const solely because for some reason that causes
-     * segfaults. {block} *should* be left unmodified.
-     * 
-     * @throws Audio_Use_Exception if something happens
-     */
-    void play_block(Block_t& block);
-    
-    /**
-     * Attempts to record and play blocks of audio simultaneously, so neither
-     * method need lock the other out for high-quality voice chat.
-     * 
+     * @param block the block to play
+     * @see Audio_Stream::play()
      * @throws Audio_Use_Exception
-     * 
-     * @return the recorded data
      */
-    /* TODO: implement such a method */
+    inline void play_block(Block_t& block) { stream->play(block); }
 private:
-    /**
-     * Initializes the Portaudio library.
-     * 
-     * @throws Audio_Exception
-     */
-    void initialize();
-    
-    /**
-     * Acquires the default input and output device info.
-     */
-    void get_device_info();
-    
-    /**
-     * Sets the input and output stream parameters.
-     */
-    void set_parameters();
-    
-    /**
-     * Opens the stream.
-     * 
-     * @throws Audio_Use_Exception
-     */
-    void open_stream();
-    
-    /**
-     * Starts the stream for reading and writing.
-     * 
-     * @throws Audio_Use_Exception
-     */
-    void start_stream();
-    
-    /**
-     * Shuts down the audio stream.
-     * 
-     * @throws Audio_Use_Exception
-     */
-    void shut_stream();
-    
-    /**
-     * Terminates the PortAudio library.
-     * 
-     * @throws Audio_Exception
-     */
-    void terminate();
-    
-    portaudio::PaStreamParameters input_parameters;
-    portaudio::PaStreamParameters output_parameters;
-    const portaudio::PaDeviceInfo* input_info;
-    const portaudio::PaDeviceInfo* output_info;
-    portaudio::PaStream* stream;
+    std::unique_ptr<Audio_Stream> stream;
 };
 
 } /* ~namespace vanwestco */
