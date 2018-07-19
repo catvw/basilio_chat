@@ -1,7 +1,15 @@
 OBJECTS = basilio_chat.o packet.o
 
+OS_NAME := $(shell uname -s)
+
+ifeq ($(OS_NAME), Linux) # on linux
+	LIBRARY_LINK = -lpthread
+else ifeq ($(OS_NAME), Darwin) #on a mac
+		LIBRARY_LINK = -lportaudio -largp
+endif
+
 basilio_chat: main.c++ basilio_chat.o packet.o terminal/terminal.o ../socket/socket.o audio/core_audio.o
-	c++ -lportaudio -lpthread \
+	c++ $(LIBRARY_LINK) \
 	-o basilio_chat main.c++ basilio_chat.o packet.o terminal/terminal.o \
 	../socket/socket.o audio/core_audio.o
 
