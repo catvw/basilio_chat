@@ -26,4 +26,4 @@ lookup_test: lookup_test.c++ type_value_lookup.t++
 
 .PHONY: clean
 clean:
-	-rm audio_test audio_test_pa $(OBJECTS)
+	-rm audio_test audio_test_pa lookup_test $(OBJECTS)

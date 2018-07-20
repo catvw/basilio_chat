@@ -27,7 +27,7 @@ inline constexpr PaSampleFormat get_sample_type() {
             vanwestco::type_value_pair<int,           paInt32  >,
             vanwestco::type_value_pair<short int,     paInt16  >,
             vanwestco::type_value_pair<char,          paInt8   >,
-            vanwestco::type_value_pair<unsigned char, paUInt8  >>();
+            vanwestco::type_value_pair<unsigned char, paUInt8  >>::value;
 }
 
 /*----------------------------------------------------------------------------*

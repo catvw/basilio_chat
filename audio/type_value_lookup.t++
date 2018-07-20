@@ -28,6 +28,28 @@ struct type_value_pair {
 };
 
 namespace impl_ {
+
+/**
+ * Template program emulating the (in?)famous ternary operator ?:. Equivalent to
+ * (B ? One : Two).
+ * 
+ * @tparam B the switch boolean
+ * @tparam One expression if true
+ * @tparam Two expression if false
+ * @treturn value the return expression
+ * 
+ * @version 0
+ */
+template<bool B, auto One, auto Two>
+struct ternary {
+    static inline constexpr const auto value = One;
+};
+
+template<auto One, auto Two>
+struct ternary<false, One, Two> {
+    static inline constexpr const auto value = Two;
+};
+
 /**
  * Default template for the lookup. Should never be instantiated.
  * 
@@ -47,25 +69,21 @@ struct type_value_lookup;
  * @tparam B whether the type has already been found
  * @tparam P the type_value_pair to check against
  * @tparam C the continuing list of type_value_pairs
- * @treturn value() the corresponding value (if found)
+ * @treturn value the corresponding value (if found)
  * 
- * @version 0
+ * @version 1
  */
 template<typename T, bool B, typename P, typename... C>
 struct type_value_lookup<T, B, P, C...> {
-    static inline constexpr decltype(P::value) value() {
-        if (B || std::is_same<T, typename P::type>::value) {
-            /* either it has been found or we found it */
-            return P::value;
-        } else {
-            /* need to keep looking */
-            return type_value_lookup<
-                    T,
-                    B || std::is_same<T,typename P::type>::value,
-                    C...
-            >::value();
-        }
-    }
+    static inline constexpr const decltype(P::value) value
+        = ternary<  B || std::is_same<T, typename P::type>::value,
+                    P::value,
+                    type_value_lookup<
+                        T,
+                        B || std::is_same<T,typename P::type>::value,
+                        C...
+                    >::value
+                 >::value;
 };
 
 /**
@@ -75,33 +93,34 @@ struct type_value_lookup<T, B, P, C...> {
  * @tparam T the type to look for
  * @tparam B whether the type has already been found
  * @tparam P the type_value_pair to look at
- * @treturn value() the corresponding value (if found)
+ * @treturn value the corresponding value (if found)
  * 
- * @version 0
+ * @version 1
  */
 template<typename T, bool B, typename P>
 struct type_value_lookup<T, B, P> {
-    static inline constexpr decltype(P::value) value() {
-        static_assert(B || std::is_same<T, typename P::type>::value,
-                      "type not found");
-        return P::value;
-    }
+    static_assert(B || std::is_same<T, typename P::type>::value,
+                  "type not found");
+    static inline constexpr const decltype(P::value) value = P::value;
 };
 } /* ~namespace _impl */
 
 
 /**
- * Wrapper function for generating the needed value from a type_value_pair list.
+ * Wrapper template for generating the needed value from a type_value_pair list.
  * Statically fails if the type is not in the list.
  * 
  * @tparam T the type to convert
  * @tparam L the type_value_pair list
- * @return the type in value form
+ * @treturn the type in value form
+ * 
+ * @version 1
  */
 template<typename T, typename... L>
-inline constexpr decltype(auto) lookup() {
-    return impl_::type_value_lookup<T, false, L...>::value();
-}
+struct lookup {
+    static inline constexpr const auto value
+            = impl_::type_value_lookup<T, false, L...>::value;
+};
 
 } /* ~namespace vanwestco */
 

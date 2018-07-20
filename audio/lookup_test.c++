@@ -17,7 +17,7 @@ int main() {
                                    tvp<char*, 4>,
                                    tvp<double, 5>,
                                    tvp<char, 6>,
-                                   tvp<int, 7>>();
+                                   tvp<int, 7>>::value;
     std::cout << i << std::endl;
     return 0;
 }

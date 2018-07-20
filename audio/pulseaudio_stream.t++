@@ -24,7 +24,7 @@ inline constexpr pa_sample_format get_sample_type() {
     return vanwestco::lookup<
             T,
             vanwestco::type_value_pair<short int, PA_SAMPLE_S16NE>,
-            vanwestco::type_value_pair<int,       PA_SAMPLE_S32NE>>();
+            vanwestco::type_value_pair<int,       PA_SAMPLE_S32NE>>::value;
 }
 
 /**
