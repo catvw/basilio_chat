@@ -1,0 +1,281 @@
+/**
+ * Stream wrapper for the PortAudio library.
+ * 
+ * @author Charles Van West
+ * @date 2018
+ */
+
+#ifndef BASILIO_CHAT_PORTAUDIO_STREAM_TXX
+#define BASILIO_CHAT_PORTAUDIO_STREAM_TXX
+
+#include "core_audio.h++"
+#include "type_value_lookup.t++"
+#include <portaudio.h>
+
+/**
+ * Wrapper function using lookup() to convert types to PaSampleFormat constants
+ * for the PortAudio library.
+ * 
+ * @tparam T the type to look for
+ * @return the type in PaSampleFormat form
+ */
+template<typename T>
+inline constexpr PaSampleFormat get_sample_type() {
+    return vanwestco::lookup<
+            T,
+            vanwestco::type_value_pair<float,         paFloat32>,
+            vanwestco::type_value_pair<int,           paInt32  >,
+            vanwestco::type_value_pair<short int,     paInt16  >,
+            vanwestco::type_value_pair<char,          paInt8   >,
+            vanwestco::type_value_pair<unsigned char, paUInt8  >>();
+}
+
+/*----------------------------------------------------------------------------*
+ |                             PortAudio_Stream                               |
+ *----------------------------------------------------------------------------*/
+/**
+ * Template representing a handle on the PortAudio library, for use inside an
+ * Audio_Handle.
+ * 
+ * @tparam S the sample rate
+ * @tparam B the audio block type
+ * 
+ * @version 0
+ */
+template<int S, typename B>
+class PortAudio_Stream : public vanwestco::Audio_Handle::Audio_Stream<S, B> {
+public:
+    constexpr const static int sample_rate = S;
+    using Block_t = B;
+    /**
+     * Defines what sort of sample we're getting.
+     * TODO: read this from Audio_Handle somehow
+     */
+    constexpr const static PaSampleFormat sample_type
+            = get_sample_type<typename Block_t::Sample_t>();
+    
+    PortAudio_Stream();
+    ~PortAudio_Stream() override;
+    
+    Block_t record() override;
+    void play(Block_t& block) override;
+private:
+    /**
+     * Initializes the PortAudio library.
+     * 
+     * @throws Audio_Exception
+     */
+    void initialize();
+    
+    /**
+     * Acquires the default input and output device info.
+     */
+    void get_device_info();
+    
+    /**
+     * Sets the input and output stream parameters.
+     */
+    void set_parameters();
+    
+    /**
+     * Opens the stream.
+     * 
+     * @throws Audio_Use_Exception
+     */
+    void open_stream();
+    
+    /**
+     * Starts the stream for reading and writing.
+     * 
+     * @throws Audio_Use_Exception
+     */
+    void start_stream();
+    
+    /**
+     * Shuts down the audio stream.
+     * 
+     * @throws Audio_Use_Exception
+     */
+    void shut_stream();
+    
+    /**
+     * Terminates the PortAudio library.
+     * 
+     * @throws Audio_Exception
+     */
+    void terminate();
+    
+    /**
+     * Creates an Audio_Exception from a PortAudio error code.
+     * 
+     * @param the error code
+     * @return the exception
+     */
+    static vanwestco::Audio_Exception make_aexc(const PaError error);
+    
+    /**
+     * Creates an Audio_Use_Exception from a PortAudio error code.
+     * 
+     * @param the error code
+     * @return the exception
+     */
+    static vanwestco::Audio_Use_Exception make_auexc(const PaError error);
+    
+    PaStreamParameters input_parameters;
+    PaStreamParameters output_parameters;
+    const PaDeviceInfo* input_info;
+    const PaDeviceInfo* output_info;
+    PaStream* stream;
+};
+
+/*----------------------------------------------------------------------------*
+ |                       PortAudio_Stream implementation                      |
+ *----------------------------------------------------------------------------*/
+
+template<int S, typename B>
+PortAudio_Stream<S, B>::PortAudio_Stream() {
+    initialize();
+    get_device_info();
+    set_parameters();
+    open_stream();
+    start_stream();
+}
+
+template<int S, typename B>
+PortAudio_Stream<S, B>::~PortAudio_Stream() {
+    Pa_StopStream(stream);
+    
+    try {
+        shut_stream();
+    } catch (...) { }
+    
+    try {
+        terminate();
+    } catch (...) { }
+}
+
+template<int S, typename B>
+typename PortAudio_Stream<S, B>::Block_t PortAudio_Stream<S, B>::record() {
+    Block_t block;
+    PaError error = Pa_ReadStream(stream,
+                                  block.channel().data(),
+                                  Block_t::frames);
+    if (error != paNoError) {
+        throw make_auexc(error);
+    }
+    
+    return block;
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::play(PortAudio_Stream<S, B>::Block_t& block) {
+    PaError error = Pa_WriteStream(stream,
+                                   block.channel().data(),
+                                   Block_t::frames);
+    if (error != paNoError) {
+        throw make_auexc(error);
+    }
+}
+
+/*----------------------------------------------------------------------------*
+ |                PortAudio_Stream private implementation                     |
+ *----------------------------------------------------------------------------*/
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::initialize() {
+    PaError error = Pa_Initialize();
+    if (error != paNoError) {
+        throw make_aexc(error);
+    }
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::get_device_info() {
+    input_parameters.device = Pa_GetDefaultInputDevice();
+    output_parameters.device = Pa_GetDefaultOutputDevice();
+    input_info = Pa_GetDeviceInfo(input_parameters.device);
+    output_info = Pa_GetDeviceInfo(output_parameters.device);
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::set_parameters() {
+    input_parameters.channelCount
+            = /*input_info->maxInputChannels*/ Block_t::channel_count;
+    input_parameters.sampleFormat = sample_type;
+    input_parameters.suggestedLatency = input_info->defaultLowInputLatency;
+    input_parameters.hostApiSpecificStreamInfo = nullptr;
+    
+    output_parameters.channelCount
+            = /*output_info->maxOutputChannels*/ Block_t::channel_count;
+    output_parameters.sampleFormat = sample_type;
+    output_parameters.suggestedLatency = output_info->defaultLowOutputLatency;
+    output_parameters.hostApiSpecificStreamInfo = nullptr;
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::open_stream() {
+    /* currently set to open for blocking I/O */
+    PaError error = Pa_OpenStream(&stream,
+                                  &input_parameters,
+                                  &output_parameters,
+                                  sample_rate,
+                                  Block_t::frames,
+                                  paClipOff,
+                                  nullptr,
+                                  nullptr);
+    if (error != paNoError) {
+        try {
+            terminate();
+        } catch (...) { }
+        
+        throw make_auexc(error);
+    }
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::start_stream() {
+    PaError error = Pa_StartStream(stream);
+    if (error != paNoError) {
+        try {
+            shut_stream();
+        } catch (...) { }
+        
+        try {
+            terminate();
+        } catch (...) { }
+        
+        throw make_auexc(error);
+    }
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::shut_stream() {
+    /* close the stream */
+    PaError error = Pa_CloseStream(stream);
+    if (error != paNoError) {
+        throw make_auexc(error);
+    }
+}
+
+template<int S, typename B>
+void PortAudio_Stream<S, B>::terminate() {
+    /* terminate PortAudio */
+    PaError error = Pa_Terminate();
+    if (error != paNoError) {
+        throw make_aexc(error);
+    }
+}
+
+template<int S, typename B>
+vanwestco::Audio_Exception
+PortAudio_Stream<S, B>::make_aexc(const PaError error) {
+    return vanwestco::Audio_Exception(Pa_GetErrorText(error));
+}
+
+template<int S, typename B>
+vanwestco::Audio_Use_Exception
+PortAudio_Stream<S, B>::make_auexc(const PaError error) {
+    return vanwestco::Audio_Use_Exception(Pa_GetErrorText(error));
+}
+
+#endif /* ~BASILIO_CHAT_PORTAUDIO_STREAM_TXX */

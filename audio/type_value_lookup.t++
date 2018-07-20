@@ -1,0 +1,108 @@
+/**
+ * A template metaprogram allowing for the lookup of a value by a corresponding
+ * type. This should probably never be used except when dealing with old C
+ * libraries that use type enumerations or macros.
+ * 
+ * @author Charles Van West
+ * @date 2018
+ */
+
+#ifndef VANWESTCO_TYPE_VALUE_LOOKUP_TXX
+#define VANWESTCO_TYPE_VALUE_LOOKUP_TXX
+
+#include <type_traits> /* std::is_same<T, U> */
+
+namespace vanwestco {
+/**
+ * A simple type/value pair for the type/value lookup function.
+ * 
+ * @tparam T the type
+ * @tparam V the value
+ * 
+ * @version 1
+ */
+template<typename T, auto V>
+struct type_value_pair {
+    using type = T;
+    static inline constexpr const auto value = V;
+};
+
+namespace impl_ {
+/**
+ * Default template for the lookup. Should never be instantiated.
+ * 
+ * @version 0
+ */
+template<typename T, bool B, typename... C>
+struct type_value_lookup;
+
+/**
+ * Specialization for the continuing part of the value lookup. Due to the way
+ * templates are instantiated, the template call in the last part of the check
+ * is actually looked into even if the value has already been found, so it is
+ * necessary to pass whether it needs to continue looking to the next part of
+ * the call.
+ * 
+ * @tparam T the type to look for
+ * @tparam B whether the type has already been found
+ * @tparam P the type_value_pair to check against
+ * @tparam C the continuing list of type_value_pairs
+ * @treturn value() the corresponding value (if found)
+ * 
+ * @version 0
+ */
+template<typename T, bool B, typename P, typename... C>
+struct type_value_lookup<T, B, P, C...> {
+    static inline constexpr decltype(P::value) value() {
+        if (B || std::is_same<T, typename P::type>::value) {
+            /* either it has been found or we found it */
+            return P::value;
+        } else {
+            /* need to keep looking */
+            return type_value_lookup<
+                    T,
+                    B || std::is_same<T,typename P::type>::value,
+                    C...
+            >::value();
+        }
+    }
+};
+
+/**
+ * Specialization for the last part of the value lookup. If the type we're
+ * looking for has not been found, a static_assert error will occur here.
+ * 
+ * @tparam T the type to look for
+ * @tparam B whether the type has already been found
+ * @tparam P the type_value_pair to look at
+ * @treturn value() the corresponding value (if found)
+ * 
+ * @version 0
+ */
+template<typename T, bool B, typename P>
+struct type_value_lookup<T, B, P> {
+    static inline constexpr decltype(P::value) value() {
+        static_assert(B || std::is_same<T, typename P::type>::value,
+                      "type not found");
+        return P::value;
+    }
+};
+} /* ~namespace _impl */
+
+
+/**
+ * Wrapper function for generating the needed value from a type_value_pair list.
+ * Statically fails if the type is not in the list.
+ * 
+ * @tparam T the type to convert
+ * @tparam L the type_value_pair list
+ * @return the type in value form
+ */
+template<typename T, typename... L>
+inline constexpr decltype(auto) lookup() {
+    return impl_::type_value_lookup<T, false, L...>::value();
+}
+
+} /* ~namespace vanwestco */
+
+#endif /* ~VANWESTCO_TYPE_VALUE_LOOKUP_TXX */

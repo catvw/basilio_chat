@@ -1,0 +1,168 @@
+/**
+ * Stream wrapper for the PulseAudio library.
+ * 
+ * @author Charles Van West
+ * @date 2018
+ */
+
+#ifndef VANWESTCO_PULSEAUDIO_STREAM_TXX
+#define VANWESTCO_PULSEAUDIO_STREAM_TXX
+
+#include "core_audio.h++"
+#include <pulse/simple.h>
+#include <pulse/error.h>
+
+/**
+ * Wrapper function using lookup() to convert types to pa_sample_format
+ * constants for the PulseAudio library.
+ * 
+ * @tparam T the type to look for
+ * @return the type in pa_sample_format form
+ */
+template<typename T>
+inline constexpr pa_sample_format get_sample_type() {
+    return vanwestco::lookup<
+            T,
+            vanwestco::type_value_pair<short int, PA_SAMPLE_S16NE>,
+            vanwestco::type_value_pair<int,       PA_SAMPLE_S32NE>>();
+}
+
+/**
+ * Template representing a handle on the PulseAudio library, for use inside an
+ * Audio_Handle.
+ * 
+ * @tparam S the sample rate
+ * @tparam B the audio block type
+ * 
+ * @version 0
+ */
+template<int S, typename B>
+class PulseAudio_Stream : public vanwestco::Audio_Handle::Audio_Stream<S, B> {
+public:
+    constexpr const static int sample_rate = S;
+    using Block_t = B;
+    
+    /**
+     * Defines what sort of sample we're getting.
+     * TODO: read this from Audio_Handle somehow
+     */
+    constexpr const static pa_sample_format_t sample_type
+            = get_sample_type<Block_t::Sample_t>();
+    
+    PulseAudio_Stream();
+    ~PulseAudio_Stream();
+    
+    vanwestco::Audio_Handle::Block_t record() override;
+    void play(vanwestco::Audio_Handle::Block_t& block) override;
+private:
+    /**
+     * Needed for read/write operations.
+     */
+    constexpr const static int bytes_per_audio_block
+            = vanwestco::Audio_Handle::frames_per_buffer 
+            * sizeof(vanwestco::Audio_Handle::Sample_t);
+     
+    /**
+     * Makes an Audio_Exception from a PulseAudio error code.
+     * 
+     * @param err the error
+     * @return the exception
+     */
+    static vanwestco::Audio_Exception make_aexc(int err);
+    
+    /**
+     * Makes an Audio_Use_Exception from a PulseAudio error code.
+     * 
+     * @param err the error
+     * @return the exception
+     */
+    static vanwestco::Audio_Use_Exception make_auexc(int err);
+    
+    pa_simple* read_stream;
+    pa_simple* write_stream;
+    pa_sample_spec specs;
+    int error; /* set when some operation goes wrong */
+};
+
+/*----------------------------------------------------------------------------*
+ |                      PulseAudio_Stream implementation                      |
+ *----------------------------------------------------------------------------*/
+
+template<int S, typename B>
+PulseAudio_Stream<S, B>::PulseAudio_Stream() {
+    specs.format = sample_type;
+    specs.channels = Block_t::channels;
+    specs.rate = vanwestco::Audio_Handle::sample_rate;
+    /* initialize the streams */
+    read_stream = pa_simple_new(nullptr,   /* default server */
+                                "nullptr", /* name; TODO: set somehow */
+                                PA_STREAM_RECORD,
+                                nullptr,   /* default device */
+                                "nullptr", /* description */
+                                &specs,
+                                nullptr,   /* default channel map */
+                                nullptr,   /* default buffering */
+                                &error);   /* internal error code recording */
+    if (read_stream == nullptr) {
+        throw make_aexc(error);
+    }
+    
+    write_stream = pa_simple_new(nullptr,
+                                 "nullptr",
+                                 PA_STREAM_PLAYBACK,
+                                 nullptr,
+                                 "nullptr",
+                                 &specs,
+                                 nullptr,
+                                 nullptr,
+                                 &error);
+    if (write_stream == nullptr) {
+        pa_simple_free(read_stream);
+        throw make_aexc(error);
+    }
+}
+
+template<int S, typename B>
+PulseAudio_Stream<S, B>::~PulseAudio_Stream() {
+    pa_simple_free(write_stream);
+    pa_simple_free(read_stream);
+}
+
+template<int S, typename B>
+PulseAudio_Stream<S, V>::Block_t PulseAudio_Stream<S, V>::record() {
+    Block_t block;
+    if (pa_simple_read(read_stream,
+                       block.channel().data(),
+                       bytes_per_audio_block,
+                       &error) < 0) { /* an error occurred during read */
+        throw make_auexc(error);
+    }
+    return block;
+}
+
+template<int S, typename B>
+void PulseAudio_Stream<S, B>::play(PulseAudio_Stream<S, B>::Block_t& block) {
+    if (pa_simple_write(write_stream,
+                        block.channel().data(),
+                        bytes_per_audio_block,
+                        &error) < 0) { /* an error occurred during write */
+        throw make_auexc(error);
+    }
+}
+
+/*----------------------------------------------------------------------------*
+ |                      PulseAudio_Stream private implementation              |
+ *----------------------------------------------------------------------------*/
+/* TODO: separate these out from the class itself */
+
+template<int S, typename B>
+vanwestco::Audio_Exception PulseAudio_Stream<S, B>::make_aexc(int err) {
+    return vanwestco::Audio_Exception(pa_strerror(err));
+}
+
+template<int S, typename B>
+vanwestco::Audio_Use_Exception PulseAudio_Stream<S, B>::make_auexc(int err) {
+    return vanwestco::Audio_Use_Exception(pa_strerror(err));
+}
+
+#endif /* ~VANWESTCO_PULSEAUDIO_STREAM_TXX */

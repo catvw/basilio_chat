@@ -2,6 +2,7 @@
  * Audio wrapper for basilio_chat, so I don't have as many headaches.
  * 
  * @author Charles Van West
+ * @date 2018
  */
 
 #ifndef BASILIO_CHAT_CORE_AUDIO_HXX
@@ -67,37 +68,27 @@ public:
  * 
  * @tparam S the sample type
  * @tparam C the channel count
- * @tparam N the per-channel block size
+ * @tparam F the per-channel frames
  * 
- * @version 4
+ * @version 5
  */
-template <typename S, int C, std::size_t N> class Audio_Block {
-    static_assert(C > 0, "channel count cannot be less than 1");
-    static_assert(N > 0, "block size cannot be less than 1");
+template <typename S, int C, std::size_t F>
+class Audio_Block {
+    static_assert(C >= 1, "channel count cannot be less than 1");
+    static_assert(F >= 1, "frame count cannot be less than 1");
 public:
-    /**
-     * Type of the audio channels.
-     */
-    using Channel_t = std::array<S, N>;
+    using Sample_t = S;
+    static constexpr const int channel_count = C;
+    static constexpr const std::size_t frames = F;
+    using Channel_t = std::array<Sample_t, frames>;
     
     /**
-     * Constructs an audio block with the correct-size vector of channels.
+     * Constructs an audio block with the correct-size array of channels.
      */
-    Audio_Block() : channels(new std::array<Channel_t, C>) { }
+    Audio_Block() : channels(new std::array<Channel_t, channel_count>) { }
     
-    /**
-     * No copying.
-     */
     Audio_Block(Audio_Block&) = delete;
-    
-    /**
-     * Only moving.
-     */
     Audio_Block(Audio_Block&& old) = default;
-    
-    /**
-     * And deleting.
-     */
     ~Audio_Block() = default;
     
     /**
@@ -107,21 +98,21 @@ public:
      * @throws std::out_of_range if an index is out of bounds
      * @return the channel
      */
-    Channel_t& channel(int index = 0) {
+    constexpr inline Channel_t& channel(int index = 0) {
         if (index < 0 || index > C) {
             throw std::out_of_range("index out of bounds");
         }
         return (*channels)[index];
     }
     
-    const Channel_t& channel(int index = 0) const {
+    constexpr inline const Channel_t& channel(int index = 0) const {
         return channel(index);
     }
 private:
     /**
      * Stores the channels in a moveable housing.
      */
-    std::unique_ptr<std::array<Channel_t, C>> channels;
+    std::unique_ptr<std::array<Channel_t, channel_count>> channels;
 };
 
 /*----------------------------------------------------------------------------*
@@ -174,8 +165,12 @@ public:
      * Base class for the system-dependent audio streaming implementation.
      * TODO: make more generic.
      * 
-     * @version 0
+     * @tparam S the sample rate
+     * @tparam B the audio block type
+     * 
+     * @version 1
      */
+    template<int S, typename B>
     class Audio_Stream {
     public:
         /**
@@ -185,7 +180,7 @@ public:
          * @throws Audio_Use_Exception
          * @return the recorded data
          */
-        virtual Block_t record() = 0;
+        virtual B record() = 0;
         
         /**
          * Attemps to play a block of ~stereo~ mono audio on the default output.
@@ -196,7 +191,7 @@ public:
          * @param block the block to play
          * @throws Audio_Use_Exception 
          */
-        virtual void play(Block_t& block) = 0;
+        virtual void play(B& block) = 0;
         
         /**
          * Attempts to record and play blocks of audio simultaneously, so
@@ -207,7 +202,7 @@ public:
          * @throws Audio_Use_Exception
          * @return the recorded data
          */
-        /* virtual Block_t play_record(Block_t& block) = 0; */
+        /* virtual B play_record(B& block) = 0; */
         
         /**
          * For cleanup purposes.
@@ -251,7 +246,7 @@ public:
      */
     inline void play_block(Block_t& block) { stream->play(block); }
 private:
-    std::unique_ptr<Audio_Stream> stream;
+    std::unique_ptr<Audio_Stream<sample_rate, Block_t>> stream;
 };
 
 } /* ~namespace vanwestco */
