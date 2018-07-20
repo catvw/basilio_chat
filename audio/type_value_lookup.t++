@@ -28,7 +28,6 @@ struct type_value_pair {
 };
 
 namespace impl_ {
-
 /**
  * Template program emulating the (in?)famous ternary operator ?:. Equivalent to
  * (B ? One : Two).
