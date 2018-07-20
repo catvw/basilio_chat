@@ -21,6 +21,9 @@ audio_test: audio_test.c++ core_audio.o
 audio_test_pa: audio_test_pa.c++
 	c++ -lportaudio -lportaudiocpp -o audio_test_pa audio_test_pa.c++
 
+lookup_test: lookup_test.c++ type_value_lookup.t++
+	c++ -o lookup_test lookup_test.c++
+
 .PHONY: clean
 clean:
 	-rm audio_test audio_test_pa $(OBJECTS)
