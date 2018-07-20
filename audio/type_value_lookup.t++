@@ -120,7 +120,6 @@ struct lookup {
     static inline constexpr const auto value
             = impl_::type_value_lookup<T, false, L...>::value;
 };
-
 } /* ~namespace vanwestco */
 
 #endif /* ~VANWESTCO_TYPE_VALUE_LOOKUP_TXX */
