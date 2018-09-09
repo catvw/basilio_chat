@@ -1,7 +1,7 @@
 OBJECTS = basilio_chat.o packet.o
 
 basilio_chat: main.c++ basilio_chat.o packet.o terminal/terminal.o ../socket/socket.o audio/core_audio.o
-	c++ -lportaudio -lpthread \
+	c++ -lportaudio -lpthread -lpulse -lpulse-simple \
 	-o basilio_chat main.c++ basilio_chat.o packet.o terminal/terminal.o \
 	../socket/socket.o audio/core_audio.o
 

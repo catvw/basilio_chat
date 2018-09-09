@@ -23,17 +23,48 @@ const packet_size header_length = 8;
 enum class packet_type : uint8_t {
     null_packet = 0x00,  /* invalid type, technically */
     join        = 0x01,  /* sent on server join */
-/*  disconnect  = 0x02,*//* sent on server disconnect */
+    disconnect  = 0x02,  /* sent on server disconnect */
     ping        = 0x03,  /* sent to ping client/server */
-    name_change = 0x04,  /* indicates username change */
-    plaintext   = 0x05,  /* indicates plaintext message */
-    start_type  = 0x06,  /* user started typing */
-    stop_type   = 0x07,  /* user stopped typing */
-    audio       = 0x08,  /* audio data */
-    typing_list = 0x09   /* list of people who are currently typing */
+    plaintext   = 0x04,  /* indicates plaintext message */
+    audio       = 0x05,  /* audio data */
 };
 
 class packet; /* forward declaration */
+
+/**
+ * For the following two functions, packet layout is done as follows:
+ * ╔═════════════╦═══════════════════════════════════╗
+ * ║ Header Byte ║            Description            ║
+ * ╠═════════════╬═══════════════════════════════════╣
+ * ║ 0 - 3       ║ Length of data                    ║
+ * ╠═════════════╬═══════════════════════════════════╣
+ * ║ 4           ║ Packet Type                       ║
+ * ╠═════════════╬═══════════════════════════════════╣
+ * ║ 5           ║ Flags0                            ║
+ * ║             ╠═════════════╦═════════════════════╣
+ * ║             ║     Bit     ║     Description     ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 0           ║ isSelf              ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 1           ║ Reserved            ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 2           ║ Reserved            ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 3           ║ Reserved            ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 4           ║ Reserved            ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 5           ║ Reserved            ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 6           ║ Reserved            ║
+ * ║             ╠═════════════╬═════════════════════╣
+ * ║             ║ 7           ║ Reserved            ║
+ * ╠═════════════╬═════════════╩═════════════════════╣
+ * ║ 6           ║ Reserved                          ║
+ * ╠═════════════╬═══════════════════════════════════╣
+ * ║ 7           ║ Reserved                          ║
+ * ╚═════════════╩═══════════════════════════════════╝
+ */
 
 /**
  * Reads a packet from the given socket.

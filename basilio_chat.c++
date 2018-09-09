@@ -97,9 +97,6 @@ void basilio_chat::process_server() {
             case packet_type::ping:
                 /* TODO: implement ping back */
                 break;
-            case packet_type::typing_list:
-                /* TODO: implement list display */
-                break;
             case packet_type::audio:
                 /* TODO: implement audio */
                 break;

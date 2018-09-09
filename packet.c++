@@ -83,11 +83,11 @@ vanwestco::packet vanwestco::read_packet(
               +  static_cast<packet_size>(header[0]),  /* reassembled length */
                  static_cast<packet_type>(header[4]),  /* packet type */
                  static_cast<packet_bitfield>(header[5])); /* is self */
-    pack.length -= header_length;
+    pack.length -= 4; /* XXX */
     
     /* get the payload */
     read_bytes += sock->read(pack.payload, pack.length);
-    if (read_bytes < pack.length + header_length) {
+    if (read_bytes < pack.length + header_length - 4) { /* XXX */
         throw vanwestco::basilio_chat::exception("EOF on packet stream");
     }
     
@@ -96,14 +96,14 @@ vanwestco::packet vanwestco::read_packet(
 
 void vanwestco::write_packet(const vanwestco::socket::Socket* sock, 
                              const packet* pack) {
-    vanwestco::packet_size full_length = header_length + pack->length;
-    unsigned char raw_packet[full_length];
+    unsigned char raw_packet[header_length + pack->length];
+    packet_size sz_4 = pack->length + 4; /* XXX */
     
     /* add payload length to header */
-    raw_packet[3] = static_cast<char>(full_length >> 24);
-    raw_packet[2] = static_cast<char>((full_length >> 16) & 0xFF);
-    raw_packet[1] = static_cast<char>((full_length >> 8) & 0xFF);
-    raw_packet[0] = static_cast<char>(full_length & 0xFF);
+    raw_packet[3] = static_cast<char>(/*pack->length*/sz_4 >> 24);
+    raw_packet[2] = static_cast<char>((/*pack->length*/sz_4 >> 16) & 0xFF);
+    raw_packet[1] = static_cast<char>((/*pack->length*/sz_4 >> 8) & 0xFF);
+    raw_packet[0] = static_cast<char>(/*pack->length*/sz_4 & 0xFF);
     
     /* add type to header */
     raw_packet[4] = static_cast<char>(pack->type);
@@ -116,5 +116,6 @@ void vanwestco::write_packet(const vanwestco::socket::Socket* sock,
         raw_packet[header_length + i] = pack->payload[i];
     }
                 /* XXX */
-    sock->write(reinterpret_cast<char*>(raw_packet), full_length);
+    sock->write(reinterpret_cast<char*>(raw_packet),
+                header_length + pack->length);
 }

@@ -35,13 +35,13 @@ static constexpr int key_voice = 0x3001;
 static constexpr error_t perr_generic_error = 0x2001;
 } /* ~namespace constants */
 
-constexpr const char* argp_program_version = "basilio_chat 0.0";
-constexpr const char* argp_program_bug_address = "nowhere@bananaland.gov";
+const char* argp_program_version = "basilio_chat 0.0";
+const char* argp_program_bug_address = "nowhere@bananaland.gov";
 
-static constexpr const char* doc = "What a great thing the internet is.";
-static constexpr const char* args_doc = "user@host:port";
+static const char* doc = "What a great thing the internet is.";
+static const char* args_doc = "user@host:port";
 
-static constexpr struct argp_option options[] = {
+static const struct argp_option options[] = {
     { "debug", constants::key_debug, nullptr, 0,
             "Turn debug mode on. You never know..." },
     { "voice", constants::key_voice, nullptr, 0,
@@ -77,7 +77,7 @@ static error_t parse_function(int key, char* arg, argp_state* state) {
             
             /* make sure we've got user@host:port */
             if (!std::regex_match(std::string(arg),
-                                  std::regex(argument_format))) {
+                                  std::regex(constants::argument_format))) {
                 throw std::exception();
             }
             
@@ -110,7 +110,7 @@ static error_t parse_function(int key, char* arg, argp_state* state) {
     return 0;
 }
 
-constexpr struct argp parser = { options, parse_function, args_doc, doc };
+static const struct argp parser = { options, parse_function, args_doc, doc };
 
 using namespace vanwestco;
 
