@@ -8,8 +8,8 @@ int main(int argc, char** argv) {
         vanwestco::Audio_Handle handle;
         constexpr const int seconds = 10;
         constexpr const int frames_per_second =
-                vanwestco::Audio_Handle::SAMPLE_RATE
-              / vanwestco::Audio_Handle::FRAMES_PER_BUFFER;
+                vanwestco::Audio_Handle::sample_rate
+              / vanwestco::Audio_Handle::frames_per_buffer;
         
         /* play for 10 seconds */
         if (argc == 1) {

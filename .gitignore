@@ -8,3 +8,7 @@ basilio_chat
 terminal/terminal_test
 audio/audio_test
 audio/audio_test_pa
+audio/lookup_test
+
+# Ignore .DS_Store (for Mac development)
+.DS_Store
